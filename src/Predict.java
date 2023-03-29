@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 public class Predict extends Command {
@@ -22,6 +23,8 @@ public class Predict extends Command {
                             .toLowerCase().split(" "))
                     .filter(s -> !s.isBlank())
                     .toList();
+
+            Map<String, String> firstWords = new HashMap<>();
             List<String> distinctWords =
                     words
                             .stream()
@@ -39,26 +42,35 @@ public class Predict extends Command {
                 String next = words.get(i + 1);
                 var wordMap = data.get(word);
                 wordMap.replace(next, wordMap.get(next) + 1);
+                if (!firstWords.containsKey(word)) {
+                    firstWords.put(word, next);
+                }
             }
             Map<String, String> analyzed =
                     data
                             .entrySet()
                             .stream()
-                            .map(e -> Map.entry(e.getKey(),
-                                    e.getValue()
-                                            .entrySet()
-                                            .stream()
-                                            .max(Comparator.comparingInt(Map.Entry::getValue))
-                                            .map(Map.Entry::getKey)
-                                            .get()
-                            ))
+                            .map(e -> {
+                                ToIntFunction<Map.Entry<String, Integer>> toIntFunction = (en) -> firstWords.get(e.getKey()).equals(en.getKey()) ? 1 : -1;
+                                return Map.entry(e.getKey(),
+                                        e.getValue()
+                                                .entrySet()
+                                                .stream()
+                                                .max(Comparator
+                                                        .comparingInt((Map.Entry<String, Integer> en) -> en.getValue())
+                                                        .thenComparingInt(toIntFunction)
+                                                )
+                                                .map(Map.Entry::getKey)
+                                                .get()
+                                );
+                            })
                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             System.out.println("Premier mot : ");
             String word = scanner.nextLine().toLowerCase();
             if (analyzed.containsKey(word)) {
                 StringBuilder builder = new StringBuilder();
                 builder.append(word).append(" ");
-                for (int i = 0; i < 20; i++) {
+                for (int i = 0; i < 19; i++) {
                     word = analyzed.get(word);
                     builder.append(word).append(" ");
                 }
