@@ -54,7 +54,7 @@ public class Predict extends Command {
                             ))
                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             System.out.println("Premier mot : ");
-            String word = scanner.nextLine();
+            String word = scanner.nextLine().toLowerCase();
             if (analyzed.containsKey(word)) {
                 StringBuilder builder = new StringBuilder();
                 builder.append(word).append(" ");
